@@ -13,6 +13,13 @@
 #include "command.h"
 #include "dict.c"
 
+#ifdef _MSC_VER
+#define strerror_r(err_no, buf, len) strerror_s(buf, len, err_no)
+#define read(s, buf, len) recv(s, buf, len, 0)
+#define write(s, buf, len) send(s, buf, len, 0)
+#define close closesocket
+#endif
+
 #define REDIS_COMMAND_CLUSTER_NODES "CLUSTER NODES"
 #define REDIS_COMMAND_CLUSTER_SLOTS "CLUSTER SLOTS"
 

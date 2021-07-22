@@ -2,15 +2,18 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-
-#include <sys/time.h>
 #include <sys/types.h>
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#else
+#include <WS2tcpip.h>
+#endif // _MSC_VER
 
 
 #include "hiutil.h"
@@ -19,6 +22,7 @@
 # include <execinfo.h>
 #endif
 
+#ifndef _MSC_VER
 int
 hi_set_blocking(int sd)
 {
@@ -44,6 +48,21 @@ hi_set_nonblocking(int sd)
 
     return fcntl(sd, F_SETFL, flags | O_NONBLOCK);
 }
+#else
+int
+hi_set_blocking(int sd)
+{
+	unsigned long mode = 1;
+	return ioctlsocket(sd, FIONBIO, &mode) != NO_ERROR;
+}
+
+int
+hi_set_nonblocking(int sd)
+{
+	unsigned long mode = 0;
+	return ioctlsocket(sd, FIONBIO, &mode) != NO_ERROR;
+}
+#endif // _MSC_VER
 
 int
 hi_set_reuseaddr(int sd)
@@ -495,6 +514,27 @@ _hi_recvn(int sd, void *vptr, size_t n)
 /*
  * Return the current time in microseconds since Epoch
  */
+#ifdef _MSC_VER
+#include <time.h>
+int gettimeofday(struct timeval *tp, void *tzp)
+{
+	time_t clock;
+	struct tm tm;
+	SYSTEMTIME wtm;
+	GetLocalTime(&wtm);
+	tm.tm_year = wtm.wYear - 1900;
+	tm.tm_mon = wtm.wMonth - 1;
+	tm.tm_mday = wtm.wDay;
+	tm.tm_hour = wtm.wHour;
+	tm.tm_min = wtm.wMinute;
+	tm.tm_sec = wtm.wSecond;
+	tm.tm_isdst = -1;
+	clock = mktime(&tm);
+	tp->tv_sec = clock;
+	tp->tv_usec = wtm.wMilliseconds * 1000;
+	return (0);
+}
+#endif
 int64_t
 hi_usec_now(void)
 {

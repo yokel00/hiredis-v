@@ -34,7 +34,9 @@
 #include "fmacros.h"
 #include <string.h>
 #include <stdlib.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
@@ -42,6 +44,14 @@
 #include "hiredis.h"
 #include "net.h"
 #include "sds.h"
+
+#ifdef _MSC_VER
+#include <WinSock2.h>
+#define strerror_r(err_no, buf, len) strerror_s(buf, len, err_no)
+#define read(s, buf, len) recv(s, buf, len, 0)
+#define write(s, buf, len) send(s, buf, len, 0)
+#define close closesocket
+#endif
 
 static redisReply *createReplyObject(int type);
 static void *createStringObject(const redisReadTask *task, char *str, size_t len);
@@ -592,6 +602,13 @@ redisReader *redisReaderCreate(void) {
 static redisContext *redisContextInit(void) {
     redisContext *c;
 
+#ifdef _MSC_VER
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
+        return NULL;
+    }
+#endif
+
     c = calloc(1,sizeof(redisContext));
     if (c == NULL)
         return NULL;
@@ -631,6 +648,10 @@ void redisFree(redisContext *c) {
     if (c->timeout)
         free(c->timeout);
     free(c);
+
+#ifdef _MSC_VER
+    WSACleanup();
+#endif
 }
 
 int redisFreeKeepFd(redisContext *c) {
@@ -657,8 +678,10 @@ int redisReconnect(redisContext *c) {
     if (c->connection_type == REDIS_CONN_TCP) {
         return redisContextConnectBindTcp(c, c->tcp.host, c->tcp.port,
                 c->timeout, c->tcp.source_addr);
+#ifndef _MSC_VER
     } else if (c->connection_type == REDIS_CONN_UNIX) {
         return redisContextConnectUnix(c, c->unix_sock.path, c->timeout);
+#endif
     } else {
         /* Something bad happened here and shouldn't have. There isn't
            enough information in the context to reconnect. */
@@ -724,6 +747,7 @@ redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
     return c;
 }
 
+#ifndef _MSC_VER
 redisContext *redisConnectUnix(const char *path) {
     redisContext *c;
 
@@ -759,6 +783,7 @@ redisContext *redisConnectUnixNonBlock(const char *path) {
     redisContextConnectUnix(c,path,NULL);
     return c;
 }
+#endif
 
 redisContext *redisConnectFd(int fd) {
     redisContext *c;
@@ -822,10 +847,10 @@ int redisBufferRead(redisContext *c) {
 /* Write the output buffer to the socket.
  *
  * Returns REDIS_OK when the buffer is empty, or (a part of) the buffer was
- * successfully written to the socket. When the buffer is empty after the
+ * succesfully written to the socket. When the buffer is empty after the
  * write operation, "done" is set to 1 (if given).
  *
- * Returns REDIS_ERR if an error occurred trying to write and sets
+ * Returns REDIS_ERR if an error occured trying to write and sets
  * c->errstr to hold the appropriate error string.
  */
 int redisBufferWrite(redisContext *c, int *done) {
@@ -984,7 +1009,7 @@ int redisAppendCommandArgv(redisContext *c, int argc, const char **argv, const s
  * context is non-blocking, the "reply" pointer will not be used and the
  * command is simply appended to the write buffer.
  *
- * Returns the reply when a reply was successfully retrieved. Returns NULL
+ * Returns the reply when a reply was succesfully retrieved. Returns NULL
  * otherwise. When NULL is returned in a blocking context, the error field
  * in the context will be set.
  */

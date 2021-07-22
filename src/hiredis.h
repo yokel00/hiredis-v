@@ -35,7 +35,9 @@
 #define __HIREDIS_H
 #include "read.h"
 #include <stdarg.h> /* for va_list */
+#ifndef _MSC_VER
 #include <sys/time.h> /* for struct timeval */
+#endif
 #include <stdint.h> /* uintXX_t, etc */
 #include "sds.h" /* for sds */
 
@@ -112,7 +114,7 @@ extern "C" {
 typedef struct redisReply {
     int type; /* REDIS_REPLY_* */
     long long integer; /* The integer when type is REDIS_REPLY_INTEGER */
-    size_t len; /* Length of string */
+    int len; /* Length of string */
     char *str; /* Used for both REDIS_REPLY_ERROR and REDIS_REPLY_STRING */
     size_t elements; /* number of elements, for REDIS_REPLY_ARRAY */
     struct redisReply **element; /* elements vector for REDIS_REPLY_ARRAY */
@@ -133,7 +135,9 @@ void redisFreeSdsCommand(sds cmd);
 
 enum redisConnectionType {
     REDIS_CONN_TCP,
-    REDIS_CONN_UNIX
+#ifndef _MSC_VER
+    REDIS_CONN_UNIX,
+#endif
 };
 
 /* Context for a connection to Redis */
@@ -167,9 +171,11 @@ redisContext *redisConnectBindNonBlock(const char *ip, int port,
                                        const char *source_addr);
 redisContext *redisConnectBindNonBlockWithReuse(const char *ip, int port,
                                                 const char *source_addr);
+#ifndef _MSC_VER
 redisContext *redisConnectUnix(const char *path);
 redisContext *redisConnectUnixWithTimeout(const char *path, const struct timeval tv);
 redisContext *redisConnectUnixNonBlock(const char *path);
+#endif
 redisContext *redisConnectFd(int fd);
 
 /**
@@ -179,7 +185,7 @@ redisContext *redisConnectFd(int fd);
  * host, ip (or path), timeout and bind address are reused,
  * flags are used unmodified from the existing context.
  *
- * Returns REDIS_OK on successful connect or REDIS_ERR otherwise.
+ * Returns REDIS_OK on successfull connect or REDIS_ERR otherwise.
  */
 int redisReconnect(redisContext *c);
 

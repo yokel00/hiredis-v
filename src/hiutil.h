@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#ifdef _MSC_VER
+typedef int  ssize_t;
+#endif // _DEBUG
+
 #define HI_OK        0
 #define HI_ERROR    -1
 #define HI_EAGAIN   -2

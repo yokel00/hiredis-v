@@ -35,10 +35,6 @@
 #include "../hiredis.h"
 #include "../async.h"
 
-#if 1 //shenzheng 2015-11-5 redis cluster
-#include "../hiredis-v.h"
-#endif //shenzheng 2015-11-5 redis cluster
-
 typedef struct redisAeEvents {
     redisAsyncContext *context;
     aeEventLoop *loop;
@@ -128,27 +124,4 @@ static int redisAeAttach(aeEventLoop *loop, redisAsyncContext *ac) {
 
     return REDIS_OK;
 }
-
-#if 1 //shenzheng 2015-11-5 redis cluster
-
-static int redisAeAttach_link(redisAsyncContext *ac, void *base)
-{
-	redisAeAttach((aeEventLoop *)base, ac);
-}
-
-static int redisClusterAeAttach(aeEventLoop *loop, redisClusterAsyncContext *acc) {
-
-	if(acc == NULL || loop == NULL)
-	{
-		return REDIS_ERR;
-	}
-
-	acc->adapter = loop;
-	acc->attach_fn = redisAeAttach_link;
-	
-    return REDIS_OK;
-}
-
-#endif //shenzheng 2015-11-5 redis cluster
-
 #endif

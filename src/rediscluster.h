@@ -2,6 +2,10 @@
 #ifndef __HIRCLUSTER_H
 #define __HIRCLUSTER_H
 
+#ifdef _MSC_VER
+#include <winsock.h>
+//#include <WinSock.h>
+#endif // _MSC_VER
 #include "hiredis.h"
 #include "async.h"
 

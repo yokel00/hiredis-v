@@ -118,5 +118,4 @@ static int redisLibuvAttach(redisAsyncContext* ac, uv_loop_t* loop) {
 
   return REDIS_OK;
 }
-
 #endif
